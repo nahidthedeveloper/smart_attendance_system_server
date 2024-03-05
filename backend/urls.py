@@ -9,5 +9,6 @@ router.register(r'auth', AuthenticationViewSet, basename='authentication')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('accounts/', include('allauth.urls')),
     path('', include(router.urls)),
 ]
