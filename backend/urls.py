@@ -12,6 +12,7 @@ router.register(r'auth', AuthenticationViewSet, basename='authentication')
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
+    path('rest-auth/', include('rest_framework.urls')),
     path('', include(router.urls)),
 ]
 

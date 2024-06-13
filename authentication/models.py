@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from academic.models import Department, Batch
+import uuid
 
 from authentication.manager import AccountManager
 
@@ -57,3 +58,18 @@ class Teacher(models.Model):
 
     def __str__(self):
         return self.user.academic_id
+
+
+class OTP(models.Model):
+    otp = models.CharField(max_length=6)
+    user = models.OneToOneField(Account, on_delete=models.CASCADE, related_name='otp')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.academic_id} - {self.otp}"
+
+
+class PasswordResetToken(models.Model):
+    user = models.OneToOneField(Account, on_delete=models.CASCADE, related_name='password_reset_token')
+    token = models.UUIDField(default=uuid.uuid4, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
