@@ -77,7 +77,7 @@ class PasswordResetSerializer(serializers.Serializer):
 
     def validate_new_password(self, value):
         if len(value) < 8:
-            raise serializers.ValidationError("Password must be at least 8 characters long.")
+            raise serializers.ValidationError({"password": "Password must be at least 8 characters long."})
         return value
 
     def validate(self, attrs):
