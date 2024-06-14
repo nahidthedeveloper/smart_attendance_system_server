@@ -34,9 +34,9 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['POST'], url_path='login')
     def login(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
-            user = Account.objects.get(academic_id=serializer.data['academic_id'])
+            user = Account.objects.get(academic_id=serializer.validated_data['academic_id'])
             user.last_login = datetime.now()
             user.save()
             refresh = RefreshToken.for_user(user)
@@ -44,9 +44,9 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
             return Response({
                 'token': str(refresh.access_token),
                 'role': user.role,
-                'user': user
+                'user': user.academic_id
             })
-        return Response(serializer.errors, status=status.HTTP_404_NOT_FOUND)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['POST'], url_path='forgot_password')
     def forgot_password(self, request, *args, **kwargs):
@@ -62,8 +62,7 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
             subject = 'Your Password Reset OTP'
             message = (
                 f'Hello {username},\n\nYour OTP for password reset is: {otp}\n\nOTP will expired after 5 minutes.\n\nIf '
-                f'you did not request'
-                f'this, please ignore this email.')
+                f'you did not request this, please ignore this email.')
             email_from = settings.EMAIL_HOST_USER
             recipient_list = [user.email]
             send_mail(subject, message, email_from, recipient_list)
@@ -85,7 +84,7 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
                 token.created_at = timezone.now()
                 token.save()
 
-            # Optional: Delete any old OTP instances for the user
+            # Delete any old OTP instances for the user
             OTP.objects.filter(user=user).delete()
 
             return Response({

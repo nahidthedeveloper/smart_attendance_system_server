@@ -15,16 +15,21 @@ class AccountSerializer(serializers.Serializer):
 
 
 class LoginSerializer(serializers.Serializer):
-    academic_id = serializers.IntegerField()
+    academic_id = serializers.CharField()
     password = serializers.CharField()
 
     def validate(self, attrs):
+        academic_id = attrs.get('academic_id')
+        password = attrs.get('password')
+
         try:
-            user = Account.objects.get(academic_id=attrs['academic_id'], is_active=True)
-            if not user.check_password(attrs['password']):
-                raise serializers.ValidationError({'password': 'ID or password is incorrect'})
-        except Exception:
-            raise serializers.ValidationError({"password": "ID or password is incorrect"})
+            user = Account.objects.get(academic_id=academic_id, is_active=True)
+        except Account.DoesNotExist:
+            raise serializers.ValidationError({'password': 'ID or password is incorrect'})
+
+        if not user.check_password(password):
+            raise serializers.ValidationError({'password': 'ID or password is incorrect'})
+
         return attrs
 
 
