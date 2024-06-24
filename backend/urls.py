@@ -5,9 +5,11 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from authentication.viewset import AuthenticationViewSet
+from user_profile.viewset import ProfileViewSet
 
 router = routers.DefaultRouter()
 router.register(r'auth', AuthenticationViewSet, basename='authentication')
+router.register(r'profile', ProfileViewSet, basename='user_profile')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

@@ -67,7 +67,9 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
             recipient_list = [user.email]
             send_mail(subject, message, email_from, recipient_list)
 
-            return Response({'message': 'Check your email to get OTP'}, status=status.HTTP_200_OK)
+            response_message = f'Check your email {user.email} to get OTP'
+
+            return Response({'message': response_message}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['post'], url_path='verify-otp')
