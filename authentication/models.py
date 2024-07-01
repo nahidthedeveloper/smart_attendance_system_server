@@ -46,7 +46,7 @@ class Student(models.Model):
     )
 
     user = models.OneToOneField(Account, on_delete=models.CASCADE)
-    batch = models.ForeignKey(Batch, on_delete=models.CASCADE, related_name='accounts', null=True, blank=True)
+    batch = models.ForeignKey(Batch, on_delete=models.CASCADE)
     semester = models.CharField(max_length=50, choices=STATUS_CHOICES, null=False)
 
     def __str__(self):

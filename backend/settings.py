@@ -25,6 +25,8 @@ APPEND_SLASH = True
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
+    'channels',
     'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -33,7 +35,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    # custom app
+    # Third-party apps
     'rest_framework',
     'corsheaders',
     'rest_framework_simplejwt',
@@ -43,10 +45,11 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
 
-    # user app
+    # Custom apps
     'authentication',
     'academic',
-
+    'user_profile',
+    'face_detect'
 ]
 
 MIDDLEWARE = [
@@ -80,7 +83,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'backend.wsgi.application'
+# WSGI_APPLICATION = 'backend.wsgi.application'
+ASGI_APPLICATION = 'backend.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
@@ -94,6 +98,15 @@ DATABASES = {
         'HOST': env('DB_HOST', default=''),
         'PORT': env('DB_PORT', default=''),
     }
+}
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("localhost", 6379)],
+        },
+    },
 }
 
 # Password validation
@@ -152,6 +165,11 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=7),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
 }
 
 # If you use custom user model then configure that

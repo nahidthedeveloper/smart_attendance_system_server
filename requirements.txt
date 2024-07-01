@@ -7,3 +7,10 @@ six==1.16.0
 djangorestframework-simplejwt==5.3.1
 django-allauth==0.61.1
 django-jazzmin==3.0.0
+dj-rest-auth==2.2.4
+channels-redis==4.2.0
+daphne==4.1.2
+opencv-python==4.9.0.80
+channels==4.1.0
+numpy==1.26.4
+asgiref~=3.8.1
