@@ -119,20 +119,14 @@ class DatasetViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated], url_path='take_attendance')
     def attendance_in(self, request):
-        # Load the Haar cascade for face detection
         haar_cascade_path = os.path.join(settings.BASE_DIR, 'face_detect', 'haarcascades',
                                          'haarcascade_frontalface_default.xml')
         face_cascade = cv2.CascadeClassifier(haar_cascade_path)
-
-        # Load the trained face recognition model
+        font = cv2.FONT_HERSHEY_SIMPLEX
         recognizer = cv2.face.LBPHFaceRecognizer_create()
         recognizer.read('model/trained_model2.yml')
-        font = cv2.FONT_HERSHEY_SIMPLEX
 
-        # Initialize video capture
         cam = cv2.VideoCapture(0)
-
-        # List to store attendance results
         results = []
 
         while True:
@@ -140,23 +134,16 @@ class DatasetViewSet(viewsets.ModelViewSet):
             if not ret:
                 break
 
-            # Convert image to grayscale for better processing
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-            # Detect faces in the grayscale image
             faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=10)
 
             for (x, y, w, h) in faces:
-                # Draw rectangle around the detected face
                 cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
-
-                # Recognize the face using the trained model
                 id, pred = recognizer.predict(gray[y:y + h, x:x + w])
                 confidence = int(100 * (1 - pred / 300))
 
                 name = None
                 if confidence > 77:
-                    # Retrieve user details based on recognized face ID
                     qs = Dataset.objects.get(sample=request.user.academic_id)
                     id_ = qs.user.academic_id
                     name = qs.user.name
@@ -165,14 +152,11 @@ class DatasetViewSet(viewsets.ModelViewSet):
                     id_ = "unknown"
                     confidence = "  {0}%".format(round(100 - confidence))
 
-                # Store attendance results
                 results.append({'username': id_, 'confidence': confidence})
 
-                # Display recognized user ID and name on the image
                 cv2.putText(img, f'{id_}', (x + 5, y - 20), font, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
                 cv2.putText(img, f'{name}', (x + 5, y - 5), font, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
 
-            # Display the processed image with detected faces
             winName = "Taking Attendance"
             cv2.namedWindow(winName)
             cv2.moveWindow(winName, 40, 30)
@@ -183,11 +167,8 @@ class DatasetViewSet(viewsets.ModelViewSet):
             if k == 27:
                 break
 
-        # Release resources
         cam.release()
         cv2.destroyAllWindows()
-
-        # Return attendance results
         return Response({'results': results})
 
     def getImagesAndLabels(self, path):
