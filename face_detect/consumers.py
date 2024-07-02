@@ -6,6 +6,8 @@ import json
 from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.core.cache import cache
+from authentication.models import Account
+from face_detect.models import Dataset
 
 
 class VideoConsumer(WebsocketConsumer):
@@ -13,6 +15,7 @@ class VideoConsumer(WebsocketConsumer):
         self.room_name = self.scope['url_route']['kwargs'].get('room_name')
         self.room_group_name = self.room_name
         user = self.scope['user']
+        self.user = user
 
         if user and user.is_authenticated:
             async_to_sync(self.channel_layer.group_add)(
@@ -44,20 +47,68 @@ class VideoConsumer(WebsocketConsumer):
             pass
 
     def process_frame(self, frame):
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        try:
+            user = Account.objects.get(academic_id=self.user)
+            qs, created = Dataset.objects.get_or_create(user=user)
+        except Account.DoesNotExist:
+            self.send(text_data=json.dumps({
+                'error': 'User account does not exist',
+            }))
+            return
+        except Dataset.MultipleObjectsReturned:
+            self.send(text_data=json.dumps({
+                'error': 'Multiple datasets found for the same user',
+            }))
+            return
+        except Exception as e:
+            self.send(text_data=json.dumps({
+                'error': f'Unexpected error: {str(e)}',
+            }))
+            return
+
+        dataset_object = qs
+
+        if dataset_object.is_sampleUploaded:
+            self.send(text_data=json.dumps({
+                'message': 'Sample photo already uploaded',
+            }))
+            return
+
+        user_folder = f"faceRecognition_data/training_dataset/{user.academic_id}/"
+        os.makedirs(user_folder, exist_ok=True)
+
         haar_cascade_path = os.path.join(settings.BASE_DIR, 'face_detect', 'haarcascades',
                                          'haarcascade_frontalface_default.xml')
         face_cascade = cv2.CascadeClassifier(haar_cascade_path)
-        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30),
-                                              flags=cv2.CASCADE_SCALE_IMAGE)
-        for (x, y, w, h) in faces:
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+        sample_number = 0
 
-        _, jpeg = cv2.imencode('.jpg', frame)
-        processed_frame_bytes = jpeg.tobytes()
+        while sample_number < 200:  # Limit to 200 frames
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+            for (x, y, w, h) in faces:
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+                sample_number += 1
+                # Save the sample image
+                cv2.imwrite(
+                    f"{user_folder}/{sample_number}.jpg",
+                    gray[y:y + h, x:x + w])
 
-        # Save the processed frame to cache
-        cache.set('processed_frame', processed_frame_bytes, timeout=5)
+            _, jpeg = cv2.imencode('.jpg', frame)
+            processed_frame_bytes = jpeg.tobytes()
 
-        # Send the processed frame back to the client
-        self.send(bytes_data=processed_frame_bytes)
+            # Save the processed frame to cache (optional)
+            cache.set('processed_frame', processed_frame_bytes, timeout=5)
+
+            # Send the processed frame back to the client as bytes
+            self.send(bytes_data=processed_frame_bytes)
+
+        # Update the Dataset object
+        # dataset_object.is_sampleUploaded = True
+        dataset_object.sample = str(sample_number)  # Adjust as needed
+        dataset_object.save(update_fields=['is_sampleUploaded', 'sample'])
+
+        # Send the final message to the client as JSON
+        self.send(text_data=json.dumps({
+            'message': 'Dataset Created',
+            'trained': True
+        }))

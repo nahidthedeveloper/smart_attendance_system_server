@@ -6,10 +6,12 @@ from django.conf.urls.static import static
 
 from authentication.viewset import AuthenticationViewSet
 from user_profile.viewset import ProfileViewSet
+from face_detect.viewset import DatasetViewSet
 
 router = routers.DefaultRouter()
 router.register(r'auth', AuthenticationViewSet, basename='authentication')
 router.register(r'profile', ProfileViewSet, basename='user_profile')
+router.register(r'datasets', DatasetViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
